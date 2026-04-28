@@ -21,7 +21,6 @@ export default function ConversationsSidebar({
 
     const fetchConversations = async () => {
       if (!user?.id) return;
-
       setLoading(true);
       setError("");
 
@@ -35,7 +34,6 @@ export default function ConversationsSidebar({
       if (!isMounted) return;
 
       if (fetchError) {
-        console.error("Failed to fetch conversations:", fetchError);
         setError(fetchError.message);
         setConversations([]);
       } else {
@@ -43,19 +41,18 @@ export default function ConversationsSidebar({
           .map((item) => {
             const conversation = item.conversations;
             if (!conversation) return null;
-
             const latestMessage = [...(conversation.messages || [])].sort(
               (a, b) => new Date(b.created_at) - new Date(a.created_at)
             )[0];
-
             return {
               id: conversation.id,
               created_at: conversation.created_at,
               lastMessage: latestMessage?.content || "No messages yet",
+              lastTime: latestMessage?.created_at || conversation.created_at,
             };
           })
           .filter(Boolean)
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          .sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
 
         setConversations(nextConversations);
 
@@ -63,23 +60,17 @@ export default function ConversationsSidebar({
           onSelectConversation(nextConversations[0].id);
         }
       }
-
       setLoading(false);
     };
 
     fetchConversations();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [onSelectConversation, user?.id]);
 
   const createConversation = async () => {
     if (!user?.id) return;
-
     setCreating(true);
     setError("");
-
     try {
       const { data: conversation, error: conversationError } = await supabase
         .from("conversations")
@@ -87,27 +78,16 @@ export default function ConversationsSidebar({
         .select("id, created_at")
         .single();
 
-      if (conversationError) {
-        console.error("Failed to create conversation:", conversationError);
-        setError(conversationError.message);
-        return;
-      }
+      if (conversationError) { setError(conversationError.message); return; }
 
       const { error: participantError } = await supabase
         .from("conversation_participants")
-        .insert({
-          conversation_id: conversation.id,
-          user_id: user.id,
-        });
+        .insert({ conversation_id: conversation.id, user_id: user.id });
 
-      if (participantError) {
-        console.error("Failed to link conversation participant:", participantError);
-        setError(participantError.message);
-        return;
-      }
+      if (participantError) { setError(participantError.message); return; }
 
       setConversations((prev) => [
-        { ...conversation, lastMessage: "No messages yet" },
+        { ...conversation, lastMessage: "No messages yet", lastTime: conversation.created_at },
         ...prev,
       ]);
       onSelectConversation(conversation.id);
@@ -116,73 +96,179 @@ export default function ConversationsSidebar({
     }
   };
 
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    return date.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
+  };
+
+  const userInitial = user?.email?.[0]?.toUpperCase() || "U";
+
   return (
-    <aside className="flex h-screen w-[280px] flex-shrink-0 flex-col border-r" style={{ backgroundColor: "#111b21", borderColor: "#262d31" }}>
-      {/* Header with Search */}
-      <div className="p-4 border-b" style={{ borderColor: "#262d31" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">Chats</h2>
+    <aside style={styles.sidebar}>
+      {/* Top bar */}
+      <div style={styles.topBar}>
+        <div style={styles.userAvatar}>{userInitial}</div>
+        <div style={styles.topActions}>
           <button
             onClick={createConversation}
             disabled={creating}
-            className="p-2 rounded-full transition hover:opacity-80"
-            style={{ backgroundColor: "#222d31" }}
+            style={styles.iconBtn}
             title="New chat"
           >
-            <span className="text-white text-lg">+</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aebac1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* Conversations List */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {loading && (
-          <div className="p-6 text-center text-gray-500">Loading conversations...</div>
-        )}
-        {error && (
-          <div className="p-4 m-4 rounded text-red-400 text-sm" style={{ backgroundColor: "#3d2621" }}>
-            {error}
+      {/* Title */}
+      <div style={styles.titleRow}>
+        <h2 style={styles.title}>Chats</h2>
+      </div>
+
+      {/* Search bar */}
+      <div style={styles.searchWrap}>
+        <div style={styles.searchInner}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8696a0" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            placeholder="Search or start new chat"
+            style={styles.searchInput}
+            readOnly
+          />
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={styles.errorBox}>{error}</div>
+      )}
+
+      {/* List */}
+      <div style={styles.list}>
+        {loading ? (
+          <div style={styles.loadingWrap}>
+            <div style={styles.spinner} />
           </div>
-        )}
-
-        <div className="flex flex-col">
-          {conversations.map((conversation) => {
-            const isActive = conversation.id === selectedConversationId;
-            const initials = "C";
-            const avatarBg = "#00695c";
-
+        ) : conversations.length === 0 ? (
+          <div style={styles.emptyWrap}>
+            <p style={styles.emptyText}>No conversations yet</p>
+            <p style={styles.emptyHint}>Tap + to start a new chat</p>
+          </div>
+        ) : (
+          conversations.map((conv, idx) => {
+            const isActive = conv.id === selectedConversationId;
             return (
               <button
-                key={conversation.id}
-                onClick={() => onSelectConversation(conversation.id)}
-                className="w-full text-left px-3 py-3 border-b flex items-center gap-3 transition hover:opacity-80"
+                key={conv.id}
+                onClick={() => onSelectConversation(conv.id)}
                 style={{
-                  backgroundColor: isActive ? "#0f5550" : "transparent",
-                  borderColor: "#262d31",
+                  ...styles.convItem,
+                  backgroundColor: isActive ? "#2a3942" : "transparent",
                 }}
               >
                 {/* Avatar */}
-                <div
-                  className="flex-shrink-0 flex items-center justify-center rounded-full w-12 h-12 text-white font-bold text-sm"
-                  style={{ backgroundColor: avatarBg }}
-                >
-                  {initials}
+                <div style={{ ...styles.convAvatar, backgroundColor: avatarColors[idx % avatarColors.length] }}>
+                  C
                 </div>
 
-                {/* Message Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white truncate text-sm">
-                    Conversation
+                {/* Content */}
+                <div style={styles.convContent}>
+                  <div style={styles.convTop}>
+                    <span style={styles.convName}>Conversation</span>
+                    <span style={styles.convTime}>{formatTime(conv.lastTime)}</span>
                   </div>
-                  <div className="text-xs text-gray-500 truncate mt-0.5">
-                    {conversation.lastMessage}
+                  <div style={styles.convBottom}>
+                    <span style={styles.convLastMsg}>{conv.lastMessage}</span>
                   </div>
                 </div>
               </button>
             );
-          })}
-        </div>
+          })
+        )}
       </div>
     </aside>
   );
 }
+
+const avatarColors = ["#00695c", "#1565c0", "#6a1b9a", "#ad1457", "#e65100", "#2e7d32"];
+
+const styles = {
+  sidebar: {
+    display: "flex", flexDirection: "column",
+    width: 300, flexShrink: 0, height: "100vh",
+    backgroundColor: "#111b21",
+    borderRight: "1px solid #1f2c33",
+    overflow: "hidden",
+  },
+  topBar: {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "10px 16px",
+    backgroundColor: "#202c33",
+    height: 60, flexShrink: 0,
+  },
+  userAvatar: {
+    width: 40, height: 40, borderRadius: "50%",
+    backgroundColor: "#00695c",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+  },
+  topActions: { display: "flex", gap: 4 },
+  iconBtn: {
+    background: "none", border: "none", cursor: "pointer",
+    padding: 8, borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  },
+  titleRow: { padding: "14px 16px 4px" },
+  title: { color: "#e9edef", fontSize: 18, fontWeight: 700, margin: 0 },
+  searchWrap: { padding: "8px 12px 4px" },
+  searchInner: {
+    display: "flex", alignItems: "center", gap: 10,
+    backgroundColor: "#202c33", borderRadius: 8,
+    padding: "8px 12px",
+  },
+  searchInput: {
+    background: "none", border: "none", outline: "none",
+    color: "#8696a0", fontSize: 13, flex: 1, cursor: "default",
+  },
+  errorBox: {
+    margin: "8px 12px", padding: "8px 12px",
+    backgroundColor: "#3d2621", color: "#ef9a9a",
+    fontSize: 12, borderRadius: 8,
+  },
+  list: { flex: 1, overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "#374045 transparent" },
+  loadingWrap: { display: "flex", justifyContent: "center", padding: 24 },
+  spinner: {
+    width: 24, height: 24,
+    border: "3px solid #2a3942", borderTopColor: "#00a884",
+    borderRadius: "50%", animation: "spin 0.8s linear infinite",
+  },
+  emptyWrap: { padding: "32px 16px", textAlign: "center" },
+  emptyText: { color: "#e9edef", fontSize: 14, margin: "0 0 6px" },
+  emptyHint: { color: "#8696a0", fontSize: 12, margin: 0 },
+  convItem: {
+    display: "flex", alignItems: "center", gap: 12,
+    width: "100%", padding: "10px 16px",
+    border: "none", borderBottom: "1px solid #1f2c33",
+    cursor: "pointer", textAlign: "left",
+    transition: "background 0.15s",
+  },
+  convAvatar: {
+    width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: "white", fontWeight: 700, fontSize: 16,
+  },
+  convContent: { flex: 1, minWidth: 0 },
+  convTop: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 },
+  convName: { color: "#e9edef", fontSize: 15, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  convTime: { color: "#8696a0", fontSize: 11, flexShrink: 0, marginLeft: 8 },
+  convBottom: {},
+  convLastMsg: { color: "#8696a0", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" },
+};
