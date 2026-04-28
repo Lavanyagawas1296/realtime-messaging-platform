@@ -44,7 +44,11 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading...</div>;
+    return (
+      <div className="flex h-screen w-screen items-center justify-center" style={{ backgroundColor: "#0b141a" }}>
+        <p className="text-gray-400">Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -52,12 +56,13 @@ function App() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="flex h-screen w-screen overflow-hidden" style={{ backgroundColor: "#0b141a" }}>
       <ConversationsSidebar
+        user={user}
         selectedConversationId={selectedConversationId}
         onSelectConversation={selectConversation}
       />
-      <main style={{ flex: 1 }}>
+      <main className="flex flex-1 min-w-0 flex-col">
         <Chat
           key={selectedConversationId || "empty-chat"}
           user={user}
