@@ -170,7 +170,7 @@ export default function Chat({ user, conversationId }) {
                   <div
                     style={{
                       ...styles.bubble,
-                      backgroundColor: isOwn ? "#005c4b" : "#202c33",
+                      backgroundColor: isOwn ? "#4f6ef7" : "#252842",
                       borderRadius: isOwn
                         ? "12px 12px 2px 12px"
                         : "12px 12px 12px 2px",
@@ -185,8 +185,8 @@ export default function Chat({ user, conversationId }) {
                       </span>
                       {isOwn && (
                         <svg width="16" height="11" viewBox="0 0 16 11" style={{ marginLeft: 3 }}>
-                          <path d="M11.071.653a.5.5 0 0 0-.707 0L4.5 6.518 2.136 4.153a.5.5 0 1 0-.707.707l2.718 2.718a.5.5 0 0 0 .707 0l6.217-6.218a.5.5 0 0 0 0-.707z" fill="#53bdeb"/>
-                          <path d="M14.071.653a.5.5 0 0 0-.707 0L7.5 6.518l-.854-.854-.707.707 1.207 1.207a.5.5 0 0 0 .707 0L14.07 1.36a.5.5 0 0 0 0-.707z" fill="#53bdeb"/>
+                          <path d="M11.071.653a.5.5 0 0 0-.707 0L4.5 6.518 2.136 4.153a.5.5 0 1 0-.707.707l2.718 2.718a.5.5 0 0 0 .707 0l6.217-6.218a.5.5 0 0 0 0-.707z" fill="#dbe4ff"/>
+                          <path d="M14.071.653a.5.5 0 0 0-.707 0L7.5 6.518l-.854-.854-.707.707 1.207 1.207a.5.5 0 0 0 .707 0L14.07 1.36a.5.5 0 0 0 0-.707z" fill="#dbe4ff"/>
                         </svg>
                       )}
                     </div>
@@ -222,7 +222,7 @@ export default function Chat({ user, conversationId }) {
             disabled={!newMsg.trim()}
             style={{
               ...styles.sendBtn,
-              backgroundColor: newMsg.trim() ? "#00a884" : "#1f2c33",
+              backgroundColor: newMsg.trim() ? "#4f6ef7" : "#252842",
               cursor: newMsg.trim() ? "pointer" : "default",
             }}
           >
@@ -241,7 +241,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    backgroundColor: "#0b141a",
+    backgroundColor: "#16192a",
     position: "relative",
     overflow: "hidden",
   },
@@ -251,15 +251,15 @@ const styles = {
     justifyContent: "space-between",
     height: 60,
     padding: "0 16px",
-    backgroundColor: "#202c33",
+    backgroundColor: "#1e2139",
     flexShrink: 0,
-    borderBottom: "1px solid #111b21",
+    borderBottom: "1px solid #252842",
   },
   headerLeft: { display: "flex", alignItems: "center", gap: 12 },
   avatar: {
     width: 40, height: 40,
     borderRadius: "50%",
-    backgroundColor: "#00695c",
+    backgroundColor: "#4f6ef7",
     display: "flex", alignItems: "center", justifyContent: "center",
     color: "white", fontWeight: 700, fontSize: 14, flexShrink: 0,
   },
@@ -270,7 +270,7 @@ const styles = {
   },
   onlineDot: {
     display: "inline-block", width: 7, height: 7,
-    borderRadius: "50%", backgroundColor: "#00a884",
+    borderRadius: "50%", backgroundColor: "#4f6ef7",
   },
   headerActions: { display: "flex", alignItems: "center", gap: 8 },
   iconBtn: {
@@ -285,7 +285,8 @@ const styles = {
     borderRadius: 6, cursor: "pointer", transition: "all 0.15s",
   },
   messagesArea: {
-    flex: 1, overflowY: "auto", position: "relative",
+    flex: "1 1 auto", minHeight: 0, overflowY: "auto", position: "relative",
+    display: "flex", flexDirection: "column",
     padding: "12px 6%",
     scrollbarWidth: "thin",
     scrollbarColor: "#374045 transparent",
@@ -310,7 +311,7 @@ const styles = {
   spinner: {
     width: 28, height: 28,
     border: "3px solid #2a3942",
-    borderTopColor: "#00a884",
+    borderTopColor: "#4f6ef7",
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
   },
@@ -319,7 +320,7 @@ const styles = {
     backgroundColor: "#3d2621", color: "#ef9a9a",
     borderRadius: 8, fontSize: 13,
   },
-  messagesList: { display: "flex", flexDirection: "column", gap: 2, position: "relative", zIndex: 1 },
+  messagesList: { display: "flex", flex: "1 1 auto", flexDirection: "column", gap: 2, position: "relative", zIndex: 1 },
   dateDivider: { display: "flex", justifyContent: "center", margin: "12px 0" },
   datePill: {
     backgroundColor: "#182229", color: "#8696a0",
@@ -339,11 +340,14 @@ const styles = {
   inputArea: {
     display: "flex", alignItems: "center", gap: 8,
     padding: "10px 16px",
-    backgroundColor: "#202c33",
+    backgroundColor: "#1e2139",
+    position: "sticky",
+    bottom: 0,
+    zIndex: 2,
     flexShrink: 0,
   },
   input: {
-    flex: 1, backgroundColor: "#2a3942",
+    flex: 1, backgroundColor: "#252842",
     border: "none", borderRadius: 8,
     padding: "10px 14px", color: "#e9edef",
     fontSize: 14, outline: "none",

@@ -171,7 +171,7 @@ export default function ConversationsSidebar({
                 onClick={() => onSelectConversation(conv.id)}
                 style={{
                   ...styles.convItem,
-                  backgroundColor: isActive ? "#2a3942" : "transparent",
+                  backgroundColor: isActive ? "#4f6ef7" : "transparent",
                 }}
               >
                 {/* Avatar */}
@@ -198,25 +198,25 @@ export default function ConversationsSidebar({
   );
 }
 
-const avatarColors = ["#00695c", "#1565c0", "#6a1b9a", "#ad1457", "#e65100", "#2e7d32"];
+const avatarColors = ["#4f6ef7", "#6f7ff7", "#8a6ff7", "#5667c9", "#3f57d8", "#6577f4"];
 
 const styles = {
   sidebar: {
     display: "flex", flexDirection: "column",
     width: 300, flexShrink: 0, height: "100vh",
-    backgroundColor: "#111b21",
-    borderRight: "1px solid #1f2c33",
+    backgroundColor: "#1e2139",
+    borderRight: "1px solid #252842",
     overflow: "hidden",
   },
   topBar: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "10px 16px",
-    backgroundColor: "#202c33",
+    backgroundColor: "#1e2139",
     height: 60, flexShrink: 0,
   },
   userAvatar: {
     width: 40, height: 40, borderRadius: "50%",
-    backgroundColor: "#00695c",
+    backgroundColor: "#4f6ef7",
     display: "flex", alignItems: "center", justifyContent: "center",
     color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
   },
@@ -231,7 +231,7 @@ const styles = {
   searchWrap: { padding: "8px 12px 4px" },
   searchInner: {
     display: "flex", alignItems: "center", gap: 10,
-    backgroundColor: "#202c33", borderRadius: 8,
+    backgroundColor: "#252842", borderRadius: 8,
     padding: "8px 12px",
   },
   searchInput: {
@@ -247,7 +247,7 @@ const styles = {
   loadingWrap: { display: "flex", justifyContent: "center", padding: 24 },
   spinner: {
     width: 24, height: 24,
-    border: "3px solid #2a3942", borderTopColor: "#00a884",
+    border: "3px solid #252842", borderTopColor: "#4f6ef7",
     borderRadius: "50%", animation: "spin 0.8s linear infinite",
   },
   emptyWrap: { padding: "32px 16px", textAlign: "center" },
@@ -256,7 +256,7 @@ const styles = {
   convItem: {
     display: "flex", alignItems: "center", gap: 12,
     width: "100%", padding: "10px 16px",
-    border: "none", borderBottom: "1px solid #1f2c33",
+    border: "none", borderBottom: "1px solid #252842",
     cursor: "pointer", textAlign: "left",
     transition: "background 0.15s",
   },
