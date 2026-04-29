@@ -451,7 +451,7 @@ const styles = {
     border: "1px solid rgba(248, 113, 113, 0.22)",
     borderRadius: 10, fontSize: 13,
   },
-  messagesList: { display: "flex", flex: "1 1 auto", flexDirection: "column", gap: 4, position: "relative", zIndex: 1, width: "100%", maxWidth: 820, margin: "0 auto" },
+  messagesList: { display: "flex", flex: "1 1 auto", flexDirection: "column", gap: 4, position: "relative", zIndex: 1, width: "100%", maxWidth: 760, margin: "0 auto" },
   dateDivider: { display: "flex", justifyContent: "center", margin: "14px 0 12px" },
   datePill: {
     backgroundColor: "rgba(31, 36, 48, 0.78)", color: "#aab4c3",

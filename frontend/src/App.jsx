@@ -113,18 +113,20 @@ function App() {
 
   return (
     <div className="app-frame flex h-screen w-screen overflow-hidden" style={{ backgroundColor: "#16192a" }}>
-      <ConversationsSidebar
-        user={user}
-        selectedConversationId={selectedConversationId}
-        onSelectConversation={selectConversation}
-      />
-      <main className="chat-main flex h-full min-h-0 flex-1 min-w-0 flex-col">
-        <Chat
-          key={selectedConversationId || "empty-chat"}
+      <div className="app-card">
+        <ConversationsSidebar
           user={user}
-          conversationId={selectedConversationId}
+          selectedConversationId={selectedConversationId}
+          onSelectConversation={selectConversation}
         />
-      </main>
+        <main className="chat-main flex h-full min-h-0 flex-1 min-w-0 flex-col">
+          <Chat
+            key={selectedConversationId || "empty-chat"}
+            user={user}
+            conversationId={selectedConversationId}
+          />
+        </main>
+      </div>
     </div>
   );
 
