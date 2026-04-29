@@ -224,9 +224,9 @@ export default function Chat({ user, conversationId }) {
       : "Offline";
 
   return (
-    <section style={styles.wrapper}>
+    <section className="chat-shell" style={styles.wrapper}>
       {/* Header */}
-      <header style={styles.header}>
+      <header className="chat-glass-header" style={styles.header}>
         {safeConversationId ? (
           <>
             <div style={styles.headerLeft}>
@@ -240,13 +240,7 @@ export default function Chat({ user, conversationId }) {
               </div>
             </div>
             <div style={styles.headerActions}>
-              <button style={styles.iconBtn} title="Video call">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aebac1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-              </button>
-              <button style={styles.iconBtn} title="Search">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aebac1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              </button>
-              <button onClick={logout} style={styles.logoutBtn}>Logout</button>
+              <button className="chat-logout-button" onClick={logout} style={styles.logoutBtn}>Logout</button>
             </div>
           </>
         ) : (
@@ -261,9 +255,9 @@ export default function Chat({ user, conversationId }) {
       </header>
 
       {/* Messages */}
-      <div style={styles.messagesArea}>
+      <div className="chat-glass-messages" style={styles.messagesArea}>
         {/* Subtle chat bg pattern */}
-        <div style={styles.bgPattern} />
+        <div className="chat-glass-overlay" style={styles.bgPattern} />
 
         {!safeConversationId && (
           <div style={styles.emptyState}>
@@ -305,9 +299,10 @@ export default function Chat({ user, conversationId }) {
                 )}
                 <div style={{ ...styles.msgRow, justifyContent: isOwn ? "flex-end" : "flex-start" }}>
                   <div
+                    className={`message-bubble ${isOwn ? "message-bubble-own" : "message-bubble-other"}`}
                     style={{
                       ...styles.bubble,
-                      backgroundColor: isOwn ? "#4f6ef7" : "#252842",
+                      backgroundColor: isOwn ? "#3e5fbd" : "#252b36",
                       borderRadius: isOwn
                         ? "12px 12px 2px 12px"
                         : "12px 12px 12px 2px",
@@ -338,10 +333,7 @@ export default function Chat({ user, conversationId }) {
 
       {/* Input */}
       {safeConversationId && (
-        <div style={styles.inputArea}>
-          <button style={styles.iconBtn} title="Emoji">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#aebac1" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          </button>
+        <div className="chat-glass-inputbar" style={styles.inputArea}>
           <input
             value={newMsg}
             onChange={(e) => setNewMsg(e.target.value)}
@@ -352,11 +344,13 @@ export default function Chat({ user, conversationId }) {
               }
             }}
             placeholder="Type a message"
+            className="chat-message-input"
             style={styles.input}
           />
           <button
             onClick={sendMessage}
             disabled={!newMsg.trim()}
+            className="chat-send-button"
             style={{
               ...styles.sendBtn,
               backgroundColor: newMsg.trim() ? "#4f6ef7" : "#252842",
@@ -378,7 +372,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     height: "100%",
-    backgroundColor: "#16192a",
+    backgroundColor: "#171b23",
     position: "relative",
     overflow: "hidden",
   },
@@ -386,47 +380,45 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    height: 60,
-    padding: "0 16px",
-    backgroundColor: "#1e2139",
+    minHeight: 66,
+    padding: "0 clamp(18px, 3vw, 30px)",
+    backgroundColor: "rgba(31, 36, 48, 0.96)",
     flexShrink: 0,
-    borderBottom: "1px solid #252842",
+    borderBottom: "1px solid rgba(203, 213, 225, 0.1)",
+    boxShadow: "0 12px 28px rgba(4, 8, 15, 0.16)",
   },
   headerLeft: { display: "flex", alignItems: "center", gap: 12 },
   avatar: {
     width: 40, height: 40,
     borderRadius: "50%",
-    backgroundColor: "#4f6ef7",
+    backgroundColor: "#596273",
+    backgroundImage: "linear-gradient(135deg, #737d90, #3a4352)",
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "white", fontWeight: 700, fontSize: 14, flexShrink: 0,
+    color: "#f8fafc", fontWeight: 700, fontSize: 14, flexShrink: 0,
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.24)",
   },
-  headerName: { color: "#e9edef", fontSize: 15, fontWeight: 600, margin: 0 },
+  headerName: { color: "#f7f8fb", fontSize: 15, fontWeight: 650, margin: 0 },
   headerStatus: {
-    color: "#8696a0", fontSize: 12, margin: 0,
+    color: "#aab4c3", fontSize: 12, margin: "3px 0 0",
     display: "flex", alignItems: "center", gap: 4,
   },
   onlineDot: {
     display: "inline-block", width: 7, height: 7,
-    borderRadius: "50%", backgroundColor: "#4f6ef7",
+    borderRadius: "50%", backgroundColor: "#42c383",
+    boxShadow: "0 0 0 3px rgba(66, 195, 131, 0.14)",
   },
-  headerActions: { display: "flex", alignItems: "center", gap: 8 },
-  iconBtn: {
-    background: "none", border: "none", cursor: "pointer",
-    padding: "6px", borderRadius: "50%",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    transition: "background 0.15s",
-  },
+  headerActions: { display: "flex", alignItems: "center" },
   logoutBtn: {
-    background: "none", border: "1px solid #3b4a54",
-    color: "#8696a0", fontSize: 12, padding: "5px 12px",
-    borderRadius: 6, cursor: "pointer", transition: "all 0.15s",
+    background: "rgba(18, 22, 30, 0.5)", border: "1px solid rgba(203, 213, 225, 0.14)",
+    color: "#cfd6e2", fontSize: 12, padding: "6px 14px",
+    borderRadius: 999, cursor: "pointer", transition: "all 0.16s ease",
   },
   messagesArea: {
     flex: "1 1 auto", minHeight: 0, overflowY: "auto", position: "relative",
     display: "flex", flexDirection: "column",
-    padding: "12px 6%",
+    padding: "22px clamp(18px, 4vw, 54px) 16px",
     scrollbarWidth: "thin",
-    scrollbarColor: "#374045 transparent",
+    scrollbarColor: "#4a5361 transparent",
   },
   bgPattern: {
     position: "fixed", inset: 0, opacity: 0.03,
@@ -437,63 +429,70 @@ const styles = {
     display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center",
     height: "100%", gap: 12, position: "relative", zIndex: 1,
+    color: "#cbd5e1",
   },
   emptyIcon: { opacity: 0.4 },
-  emptyTitle: { color: "#e9edef", fontSize: 18, fontWeight: 500, margin: 0 },
-  emptySubtitle: { color: "#8696a0", fontSize: 13, margin: 0 },
+  emptyTitle: { color: "#f7f8fb", fontSize: 18, fontWeight: 600, margin: 0 },
+  emptySubtitle: { color: "#aab4c3", fontSize: 13, margin: 0 },
   loadingWrap: {
     display: "flex", alignItems: "center", justifyContent: "center",
     height: "100%",
   },
   spinner: {
     width: 28, height: 28,
-    border: "3px solid #2a3942",
-    borderTopColor: "#4f6ef7",
+    border: "3px solid #323946",
+    borderTopColor: "#7aa2f7",
     borderRadius: "50%",
     animation: "spin 0.8s linear infinite",
   },
   errorBox: {
     margin: "8px 0", padding: "10px 14px",
-    backgroundColor: "#3d2621", color: "#ef9a9a",
-    borderRadius: 8, fontSize: 13,
+    backgroundColor: "rgba(127, 29, 29, 0.28)", color: "#fecaca",
+    border: "1px solid rgba(248, 113, 113, 0.22)",
+    borderRadius: 10, fontSize: 13,
   },
-  messagesList: { display: "flex", flex: "1 1 auto", flexDirection: "column", gap: 2, position: "relative", zIndex: 1 },
-  dateDivider: { display: "flex", justifyContent: "center", margin: "12px 0" },
+  messagesList: { display: "flex", flex: "1 1 auto", flexDirection: "column", gap: 4, position: "relative", zIndex: 1, width: "100%", maxWidth: 820, margin: "0 auto" },
+  dateDivider: { display: "flex", justifyContent: "center", margin: "14px 0 12px" },
   datePill: {
-    backgroundColor: "#182229", color: "#8696a0",
-    fontSize: 11, padding: "4px 12px", borderRadius: 8,
+    backgroundColor: "rgba(31, 36, 48, 0.78)", color: "#aab4c3",
+    border: "1px solid rgba(203, 213, 225, 0.1)",
+    fontSize: 11, padding: "5px 12px", borderRadius: 999,
   },
-  msgRow: { display: "flex", width: "100%", marginBottom: 2 },
+  msgRow: { display: "flex", width: "100%", marginBottom: 4 },
   bubble: {
-    maxWidth: "65%", padding: "7px 12px 6px",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
+    maxWidth: "min(66%, 520px)", padding: "9px 13px 7px",
+    boxShadow: "0 12px 24px rgba(4, 8, 15, 0.18)",
+    border: "1px solid rgba(255, 255, 255, 0.055)",
   },
-  bubbleText: { color: "#e9edef", fontSize: 14, margin: 0, lineHeight: 1.4, wordBreak: "break-word" },
+  bubbleText: { color: "#f8fafc", fontSize: 14, margin: 0, lineHeight: 1.48, wordBreak: "break-word" },
   bubbleMeta: {
     display: "flex", alignItems: "center", justifyContent: "flex-end",
     gap: 2, marginTop: 3,
   },
-  bubbleTime: { color: "#8696a0", fontSize: 11 },
+  bubbleTime: { color: "rgba(232, 236, 243, 0.66)", fontSize: 11 },
   inputArea: {
-    display: "flex", alignItems: "center", gap: 8,
-    padding: "10px 16px",
-    backgroundColor: "#1e2139",
+    display: "flex", alignItems: "center", gap: 10,
+    padding: "14px clamp(18px, 3vw, 30px)",
+    backgroundColor: "rgba(31, 36, 48, 0.96)",
+    borderTop: "1px solid rgba(203, 213, 225, 0.1)",
     position: "sticky",
     bottom: 0,
     zIndex: 2,
     flexShrink: 0,
   },
   input: {
-    flex: 1, backgroundColor: "#252842",
-    border: "none", borderRadius: 8,
-    padding: "10px 14px", color: "#e9edef",
+    flex: 1, backgroundColor: "#202631",
+    border: "1px solid rgba(203, 213, 225, 0.12)", borderRadius: 999,
+    padding: "13px 17px", color: "#f7f8fb",
     fontSize: 14, outline: "none",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.035), 0 10px 24px rgba(4, 8, 15, 0.18)",
     "::placeholder": { color: "#8696a0" },
   },
   sendBtn: {
-    width: 42, height: 42, borderRadius: "50%",
+    width: 44, height: 44, borderRadius: "50%",
     border: "none", display: "flex",
     alignItems: "center", justifyContent: "center",
-    flexShrink: 0, transition: "background 0.2s",
+    flexShrink: 0, transition: "background 0.2s ease, transform 0.16s ease, opacity 0.16s ease",
+    boxShadow: "0 12px 24px rgba(64, 101, 196, 0.24)",
   },
 };

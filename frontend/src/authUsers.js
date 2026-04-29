@@ -2,12 +2,6 @@ import { supabase } from "./supabase";
 
 const unique = (values) => [...new Set((values || []).filter(Boolean))];
 
-console.log("CALLING get_user_emails with:", validUserIds);
-
-if (error) {
-  console.error("RPC ERROR:", error);
-}
-
 export async function fetchAuthUsersByIds(userIds) {
   const validUserIds = unique(userIds);
 

@@ -1,3 +1,180 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: #151922;
+}
+
+body {
+  margin: 0;
+  color: #f7f8fb;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.chat-shell,
+.conversations-sidebar {
+  color-scheme: dark;
+}
+
+.app-frame {
+  background:
+    radial-gradient(circle at 35% -10%, rgba(122, 162, 247, 0.08), transparent 34%),
+    linear-gradient(135deg, #12161f 0%, #171b23 48%, #1a1f2a 100%) !important;
+  gap: 10px;
+  padding: 10px;
+}
+
+.conversations-sidebar,
+.chat-shell {
+  border-radius: 14px;
+}
+
+.chat-main {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 18px 44px rgba(4, 8, 15, 0.22);
+}
+
+.chat-shell ::selection,
+.conversations-sidebar ::selection {
+  background: rgba(96, 165, 250, 0.28);
+}
+
+.chat-shell ::-webkit-scrollbar,
+.conversations-sidebar ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-shell ::-webkit-scrollbar-track,
+.conversations-sidebar ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-shell ::-webkit-scrollbar-thumb,
+.conversations-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(116, 124, 139, 0.4);
+  border-radius: 999px;
+}
+
+.chat-shell ::-webkit-scrollbar-thumb:hover,
+.conversations-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(170, 180, 195, 0.5);
+}
+
+.sidebar-icon-button:hover {
+  background: rgba(203, 213, 225, 0.11) !important;
+}
+
+.sidebar-icon-button:active,
+.chat-send-button:active,
+.conversation-item:active,
+.start-chat-option:active {
+  transform: scale(0.98);
+}
+
+.chat-logout-button:hover {
+  border-color: rgba(203, 213, 225, 0.28) !important;
+  color: #f7f8fb !important;
+  background: rgba(45, 52, 66, 0.72) !important;
+}
+
+.chat-message-input::placeholder {
+  color: #aab4c3;
+}
+
+.chat-message-input:focus {
+  border-color: rgba(122, 162, 247, 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 0 0 3px rgba(122, 162, 247, 0.14),
+    0 12px 26px rgba(4, 8, 15, 0.2) !important;
+}
+
+.chat-send-button:hover:not(:disabled) {
+  background-color: #5472d3 !important;
+}
+
+.chat-send-button:disabled {
+  opacity: 0.55;
+  box-shadow: none !important;
+}
+
+.conversation-item:hover {
+  background: rgba(203, 213, 225, 0.075) !important;
+  border-color: rgba(203, 213, 225, 0.1) !important;
+}
+
+.conversation-item.is-active {
+  background: linear-gradient(90deg, rgba(122, 162, 247, 0.18), rgba(122, 162, 247, 0.08)) !important;
+  border-color: rgba(122, 162, 247, 0.24) !important;
+  box-shadow:
+    inset 3px 0 0 #7aa2f7,
+    0 10px 24px rgba(4, 8, 15, 0.18);
+}
+
+.conversation-item.is-active:hover {
+  background: linear-gradient(90deg, rgba(122, 162, 247, 0.22), rgba(122, 162, 247, 0.1)) !important;
+}
+
+.start-chat-option:hover {
+  background: rgba(122, 162, 247, 0.16) !important;
+  border-color: rgba(122, 162, 247, 0.34) !important;
+}
+
+.start-chat-option:disabled {
+  cursor: default !important;
+  opacity: 0.6;
+}
+
+.conversation-avatar {
+  background-color: #596273 !important;
+  background-image: linear-gradient(135deg, #737d90, #3a4352);
+}
+
+.chat-shell [style*="max-width: min(66%, 520px)"] {
+  backdrop-filter: blur(8px);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .app-frame {
+    gap: 0;
+    padding: 0;
+  }
+
+  .conversations-sidebar,
+  .chat-shell,
+  .chat-main {
+    border-radius: 0;
+  }
+
+  .conversations-sidebar {
+    width: 280px !important;
+  }
+
+  .chat-shell header {
+    padding-inline: 14px !important;
+  }
+
+  .chat-shell [style*="max-width: min(66%, 520px)"] {
+    max-width: 84% !important;
+  }
+}

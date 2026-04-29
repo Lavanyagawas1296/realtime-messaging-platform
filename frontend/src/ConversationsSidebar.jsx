@@ -33,6 +33,7 @@ export default function ConversationsSidebar({
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const selectedConversationIdRef = useRef(selectedConversationId);
   const userId = user?.id;
 
@@ -251,14 +252,21 @@ export default function ConversationsSidebar({
   };
 
   const userInitial = user?.email?.[0]?.toUpperCase() || "U";
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredConversations = normalizedSearch
+    ? conversations.filter((conv) =>
+        (conv.other_user?.email || "").toLowerCase().includes(normalizedSearch)
+      )
+    : conversations;
 
   return (
-    <aside style={styles.sidebar}>
+    <aside className="conversations-sidebar" style={styles.sidebar}>
       {/* Top bar */}
-      <div style={styles.topBar}>
+      <div className="sidebar-glass-topbar" style={styles.topBar}>
         <div style={styles.userAvatar}>{userInitial}</div>
         <div style={styles.topActions}>
           <button
+            className="sidebar-icon-button"
             onClick={() => createConversation()}
             disabled={creating}
             style={styles.iconBtn}
@@ -279,12 +287,13 @@ export default function ConversationsSidebar({
 
       {/* Search bar */}
       <div style={styles.searchWrap}>
-        <div style={styles.searchInner}>
+        <div className="sidebar-glass-search" style={styles.searchInner}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8696a0" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input
             placeholder="Search or start new chat"
             style={styles.searchInput}
-            readOnly
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
@@ -300,25 +309,35 @@ export default function ConversationsSidebar({
           <div style={styles.loadingWrap}>
             <div style={styles.spinner} />
           </div>
+        ) : filteredConversations.length === 0 && normalizedSearch ? (
+          <button
+            className="start-chat-option"
+            onClick={() => createConversation(searchTerm)}
+            disabled={creating}
+            style={styles.startChatOption}
+          >
+            Start new chat with "{searchTerm.trim()}"
+          </button>
         ) : conversations.length === 0 ? (
           <div style={styles.emptyWrap}>
             <p style={styles.emptyText}>No conversations yet</p>
             <p style={styles.emptyHint}>Tap + to start a new chat</p>
           </div>
         ) : (
-          conversations.map((conv, idx) => {
+          filteredConversations.map((conv, idx) => {
             const isActive = conv.id === selectedConversationId;
             return (
               <button
                 key={conv.id}
+                className={`conversation-item ${isActive ? "is-active" : ""}`}
                 onClick={() => onSelectConversation(conv.id)}
                 style={{
                   ...styles.convItem,
-                  backgroundColor: isActive ? "#4f6ef7" : "transparent",
+                  backgroundColor: isActive ? "rgba(37, 99, 235, 0.18)" : "transparent",
                 }}
               >
                 {/* Avatar */}
-                <div style={{ ...styles.convAvatar, backgroundColor: avatarColors[idx % avatarColors.length] }}>
+                <div className="conversation-avatar" style={{ ...styles.convAvatar, backgroundColor: avatarColors[idx % avatarColors.length] }}>
                   {(conv.other_user?.email?.[0] || "U").toUpperCase()}
                 </div>
 
@@ -348,74 +367,96 @@ const avatarColors = ["#4f6ef7", "#6f7ff7", "#8a6ff7", "#5667c9", "#3f57d8", "#6
 const styles = {
   sidebar: {
     display: "flex", flexDirection: "column",
-    width: 300, flexShrink: 0, height: "100vh",
-    backgroundColor: "#1e2139",
-    borderRight: "1px solid #252842",
+    width: 320, flexShrink: 0, height: "100vh",
+    backgroundColor: "#12161f",
+    borderRight: "1px solid rgba(203, 213, 225, 0.1)",
     overflow: "hidden",
+    boxShadow: "10px 0 34px rgba(4, 8, 15, 0.24)",
   },
   topBar: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "10px 16px",
-    backgroundColor: "#1e2139",
-    height: 60, flexShrink: 0,
+    padding: "12px 18px",
+    backgroundColor: "#181d28",
+    minHeight: 66, flexShrink: 0,
+    borderBottom: "1px solid rgba(203, 213, 225, 0.08)",
   },
   userAvatar: {
     width: 40, height: 40, borderRadius: "50%",
-    backgroundColor: "#4f6ef7",
+    backgroundColor: "#596273",
+    backgroundImage: "linear-gradient(135deg, #737d90, #3a4352)",
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer",
+    color: "#f8fafc", fontWeight: 700, fontSize: 14, cursor: "pointer",
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.24)",
   },
   topActions: { display: "flex", gap: 4 },
   iconBtn: {
-    background: "none", border: "none", cursor: "pointer",
+    background: "transparent", border: "none", cursor: "pointer",
     padding: 8, borderRadius: "50%",
     display: "flex", alignItems: "center", justifyContent: "center",
+    transition: "background 0.16s ease, transform 0.16s ease",
   },
-  titleRow: { padding: "14px 16px 4px" },
-  title: { color: "#e9edef", fontSize: 18, fontWeight: 700, margin: 0 },
-  searchWrap: { padding: "8px 12px 4px" },
+  titleRow: { padding: "18px 18px 9px" },
+  title: { color: "#f7f8fb", fontSize: 20, fontWeight: 700, margin: 0 },
+  searchWrap: { padding: "6px 14px 12px" },
   searchInner: {
     display: "flex", alignItems: "center", gap: 10,
-    backgroundColor: "#252842", borderRadius: 8,
-    padding: "8px 12px",
+    backgroundColor: "#202631", borderRadius: 999,
+    border: "1px solid rgba(203, 213, 225, 0.1)",
+    padding: "10px 14px",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.035), 0 10px 22px rgba(4, 8, 15, 0.12)",
   },
   searchInput: {
     background: "none", border: "none", outline: "none",
-    color: "#8696a0", fontSize: 13, flex: 1, cursor: "default",
+    color: "#aab4c3", fontSize: 13, flex: 1, cursor: "text",
   },
   errorBox: {
-    margin: "8px 12px", padding: "8px 12px",
-    backgroundColor: "#3d2621", color: "#ef9a9a",
-    fontSize: 12, borderRadius: 8,
+    margin: "8px 14px", padding: "9px 12px",
+    backgroundColor: "rgba(127, 29, 29, 0.28)", color: "#fecaca",
+    border: "1px solid rgba(248, 113, 113, 0.22)",
+    fontSize: 12, borderRadius: 10,
   },
-  list: { flex: 1, overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "#374045 transparent" },
+  list: { flex: 1, overflowY: "auto", padding: "6px 10px 14px", scrollbarWidth: "thin", scrollbarColor: "#4a5361 transparent" },
   loadingWrap: { display: "flex", justifyContent: "center", padding: 24 },
   spinner: {
     width: 24, height: 24,
-    border: "3px solid #252842", borderTopColor: "#4f6ef7",
+    border: "3px solid #323946", borderTopColor: "#7aa2f7",
     borderRadius: "50%", animation: "spin 0.8s linear infinite",
   },
   emptyWrap: { padding: "32px 16px", textAlign: "center" },
-  emptyText: { color: "#e9edef", fontSize: 14, margin: "0 0 6px" },
-  emptyHint: { color: "#8696a0", fontSize: 12, margin: 0 },
+  emptyText: { color: "#f7f8fb", fontSize: 14, margin: "0 0 6px" },
+  emptyHint: { color: "#aab4c3", fontSize: 12, margin: 0 },
+  startChatOption: {
+    width: "100%",
+    padding: "12px",
+    border: "1px solid rgba(122, 162, 247, 0.24)",
+    borderRadius: 12,
+    background: "rgba(122, 162, 247, 0.1)",
+    color: "#dbe6ff",
+    cursor: "pointer",
+    textAlign: "left",
+    fontSize: 13,
+  },
   convItem: {
     display: "flex", alignItems: "center", gap: 12,
-    width: "100%", padding: "10px 16px",
-    border: "none", borderBottom: "1px solid #252842",
+    width: "100%", padding: "11px 12px",
+    marginBottom: 4,
+    border: "1px solid transparent",
+    borderRadius: 12,
     cursor: "pointer", textAlign: "left",
-    transition: "background 0.15s",
+    transition: "background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
   },
   convAvatar: {
-    width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+    width: 46, height: 46, borderRadius: "50%", flexShrink: 0,
     display: "flex", alignItems: "center", justifyContent: "center",
-    color: "white", fontWeight: 700, fontSize: 16,
+    color: "#f8fafc", fontWeight: 700, fontSize: 15,
+    boxShadow: "0 8px 18px rgba(4, 8, 15, 0.24)",
   },
   convContent: { flex: 1, minWidth: 0 },
   convTop: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 },
-  convName: { color: "#e9edef", fontSize: 15, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  convTime: { color: "#8696a0", fontSize: 11, flexShrink: 0, marginLeft: 8 },
+  convName: { color: "#f7f8fb", fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  convTime: { color: "#aab4c3", fontSize: 11, flexShrink: 0, marginLeft: 8 },
   convBottom: {},
-  convLastMsg: { color: "#8696a0", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" },
+  convLastMsg: { color: "#aab4c3", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" },
 };
 
 
