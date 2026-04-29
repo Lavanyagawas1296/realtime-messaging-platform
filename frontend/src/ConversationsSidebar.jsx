@@ -1,5 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchAuthUsersByIds } from "./authUsers";
 import { supabase } from "./supabase";
+
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const unique = (values) => [...new Set(values.filter(Boolean))];
+
+async function findAuthUser(target) {
+  const value = target.trim();
+  if (!value) return null;
+
+  if (uuidPattern.test(value)) {
+    const usersById = await fetchAuthUsersByIds([value]);
+    return usersById.get(value) || null;
+  }
+
+  const { data, error } = await supabase
+    .rpc("find_user_by_email", { target_email: value.toLowerCase() })
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? { id: data.id, email: data.email } : null;
+}
 
 export default function ConversationsSidebar({
   user,
@@ -11,42 +34,100 @@ export default function ConversationsSidebar({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const selectedConversationIdRef = useRef(selectedConversationId);
+  const userId = user?.id;
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversationId;
   }, [selectedConversationId]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchConversations = async () => {
-      if (!user?.id) return;
-      setLoading(true);
+  const fetchConversations = useCallback(
+    async ({ showLoading = true } = {}) => {
+      if (!userId) return [];
+      if (showLoading) setLoading(true);
       setError("");
 
-      const { data, error: fetchError } = await supabase
-        .from("conversation_participants")
-        .select(
-          "conversation_id, conversations(id, created_at, messages(content, created_at))"
-        )
-        .eq("user_id", user.id);
+      try {
+        const { data: ownParticipants, error: ownParticipantsError } =
+          await supabase
+            .from("conversation_participants")
+            .select("conversation_id")
+            .eq("user_id", userId);
 
-      if (!isMounted) return;
+        if (ownParticipantsError) throw ownParticipantsError;
 
-      if (fetchError) {
-        setError(fetchError.message);
-        setConversations([]);
-      } else {
-        const nextConversations = (data || [])
-          .map((item) => {
-            const conversation = item.conversations;
-            if (!conversation) return null;
-            const latestMessage = [...(conversation.messages || [])].sort(
-              (a, b) => new Date(b.created_at) - new Date(a.created_at)
-            )[0];
+        const conversationIds = unique(
+          (ownParticipants || []).map((item) => item.conversation_id)
+        );
+
+        if (conversationIds.length === 0) {
+          setConversations([]);
+          return [];
+        }
+
+        const [
+          { data: conversationsData, error: conversationsError },
+          { data: participantsData, error: participantsError },
+          { data: messagesData, error: messagesError },
+        ] = await Promise.all([
+          supabase
+            .from("conversations")
+            .select("id, created_at")
+            .in("id", conversationIds),
+          supabase
+            .from("conversation_participants")
+            .select("conversation_id, user_id")
+            .in("conversation_id", conversationIds),
+          supabase
+            .from("messages")
+            .select("id, conversation_id, content, created_at")
+            .in("conversation_id", conversationIds)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        if (conversationsError) throw conversationsError;
+        if (participantsError) throw participantsError;
+        if (messagesError) throw messagesError;
+
+        const participantsByConversation = new Map();
+        (participantsData || []).forEach((participant) => {
+          const existing =
+            participantsByConversation.get(participant.conversation_id) || [];
+          existing.push(participant.user_id);
+          participantsByConversation.set(participant.conversation_id, existing);
+        });
+
+        const latestMessageByConversation = new Map();
+        (messagesData || []).forEach((message) => {
+          if (!latestMessageByConversation.has(message.conversation_id)) {
+            latestMessageByConversation.set(message.conversation_id, message);
+          }
+        });
+
+        const otherUserIds = unique(
+          (participantsData || [])
+            .filter((participant) => participant.user_id !== userId)
+            .map((participant) => participant.user_id)
+        );
+        const authUsersById = await fetchAuthUsersByIds(otherUserIds);
+
+        const nextConversations = (conversationsData || [])
+          .map((conversation) => {
+            const participantIds =
+              participantsByConversation.get(conversation.id) || [];
+            const otherUserId = participantIds.find(
+              (participantId) => participantId !== userId
+            );
+            const otherUser = authUsersById.get(otherUserId);
+            const latestMessage = latestMessageByConversation.get(
+              conversation.id
+            );
+
+            if (!otherUserId || !otherUser) return null;
+
             return {
               id: conversation.id,
               created_at: conversation.created_at,
+              other_user: otherUser,
               lastMessage: latestMessage?.content || "No messages yet",
               lastTime: latestMessage?.created_at || conversation.created_at,
             };
@@ -59,38 +140,100 @@ export default function ConversationsSidebar({
         if (!selectedConversationIdRef.current && nextConversations.length > 0) {
           onSelectConversation(nextConversations[0].id);
         }
+
+        return nextConversations;
+      } catch (fetchError) {
+        setError(fetchError.message);
+        setConversations([]);
+        return [];
+      } finally {
+        if (showLoading) setLoading(false);
       }
-      setLoading(false);
+    },
+    [onSelectConversation, userId]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.resolve().then(() => fetchConversations()).finally(() => {
+      if (!isMounted) return;
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    if (!userId) return undefined;
+
+    const refreshConversations = () => {
+      fetchConversations({ showLoading: false });
     };
 
-    fetchConversations();
-    return () => { isMounted = false; };
-  }, [onSelectConversation, user?.id]);
+    const channel = supabase
+      .channel(`conversation-list:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_participants",
+          filter: `user_id=eq.${userId}`,
+        },
+        refreshConversations
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        refreshConversations
+      )
+      .subscribe();
 
-  const createConversation = async () => {
-    if (!user?.id) return;
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchConversations, userId]);
+
+  const createConversation = async (targetUserInput) => {
+    if (!userId) return;
+    const target =
+      targetUserInput ||
+      window.prompt("Enter the user's email address or user id");
+    if (!String(target || "").trim()) return;
+
     setCreating(true);
     setError("");
     try {
+      const targetUser = await findAuthUser(String(target));
+      if (!targetUser) {
+        setError("No user found for that email or id.");
+        return;
+      }
+
+      if (targetUser.id === userId) {
+        setError("Choose another user to start a chat.");
+        return;
+      }
+
       const { data: conversation, error: conversationError } = await supabase
-        .from("conversations")
-        .insert({})
-        .select("id, created_at")
+        .rpc("get_or_create_private_conversation", {
+          target_user_id: targetUser.id,
+        })
         .single();
 
-      if (conversationError) { setError(conversationError.message); return; }
+      if (conversationError) throw conversationError;
 
-      const { error: participantError } = await supabase
-        .from("conversation_participants")
-        .insert({ conversation_id: conversation.id, user_id: user.id });
-
-      if (participantError) { setError(participantError.message); return; }
-
-      setConversations((prev) => [
-        { ...conversation, lastMessage: "No messages yet", lastTime: conversation.created_at },
-        ...prev,
-      ]);
+      await fetchConversations({ showLoading: false });
       onSelectConversation(conversation.id);
+    } catch (createError) {
+      setError(createError.message);
+	console.error("Sidebar error:", createError);
     } finally {
       setCreating(false);
     }
@@ -116,7 +259,7 @@ export default function ConversationsSidebar({
         <div style={styles.userAvatar}>{userInitial}</div>
         <div style={styles.topActions}>
           <button
-            onClick={createConversation}
+            onClick={() => createConversation()}
             disabled={creating}
             style={styles.iconBtn}
             title="New chat"
@@ -176,13 +319,15 @@ export default function ConversationsSidebar({
               >
                 {/* Avatar */}
                 <div style={{ ...styles.convAvatar, backgroundColor: avatarColors[idx % avatarColors.length] }}>
-                  C
+                  {(conv.other_user?.email?.[0] || "U").toUpperCase()}
                 </div>
 
                 {/* Content */}
                 <div style={styles.convContent}>
                   <div style={styles.convTop}>
-                    <span style={styles.convName}>Conversation</span>
+                    <span style={styles.convName}>
+                      {conv.other_user?.email || "Unknown user"}
+                    </span>
                     <span style={styles.convTime}>{formatTime(conv.lastTime)}</span>
                   </div>
                   <div style={styles.convBottom}>
@@ -272,3 +417,5 @@ const styles = {
   convBottom: {},
   convLastMsg: { color: "#8696a0", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" },
 };
+
+

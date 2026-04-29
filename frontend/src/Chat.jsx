@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { fetchAuthUsersByIds } from "./authUsers";
 import { supabase } from "./supabase";
 
 export default function Chat({ user, conversationId }) {
@@ -11,6 +12,8 @@ export default function Chat({ user, conversationId }) {
   const [newMsg, setNewMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [otherUser, setOtherUser] = useState(null);
+  const [presence, setPresence] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -22,7 +25,7 @@ export default function Chat({ user, conversationId }) {
       setError("");
       const { data, error: fetchError } = await supabase
         .from("messages")
-        .select("id, content, sender_id, conversation_id, created_at")
+        .select("id, content, sender_id, conversation_id, created_at, delivered, seen")
         .eq("conversation_id", safeConversationId)
         .order("created_at", { ascending: true });
 
@@ -34,6 +37,13 @@ export default function Chat({ user, conversationId }) {
         setMessages(data || []);
       }
       setLoading(false);
+    };
+
+    const markMessagesSeen = async () => {
+      if (!user?.id) return;
+      await supabase.rpc("mark_conversation_seen", {
+        target_conversation_id: safeConversationId,
+      });
     };
 
     const channel = supabase
@@ -57,15 +67,112 @@ export default function Chat({ user, conversationId }) {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${safeConversationId}`,
+        },
+        (payload) => {
+          const updatedMessage = payload.new;
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === updatedMessage.id ? updatedMessage : message
+            )
+          );
+        }
+      )
       .subscribe();
 
-    fetchMessages();
+    fetchMessages().then(markMessagesSeen);
 
     return () => {
       mounted = false;
       supabase.removeChannel(channel);
     };
-  }, [safeConversationId]);
+  }, [safeConversationId, user?.id]);
+
+  useEffect(() => {
+    if (!safeConversationId || !user?.id) {
+      return undefined;
+    }
+
+    let mounted = true;
+
+    const fetchOtherUserAndPresence = async () => {
+      try {
+        const { data: participants, error: participantsError } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", safeConversationId);
+
+        if (participantsError) throw participantsError;
+
+        const otherUserId = (participants || []).find(
+          (participant) => participant.user_id !== user.id
+        )?.user_id;
+
+        if (!otherUserId) return;
+
+        const usersById = await fetchAuthUsersByIds([otherUserId]);
+        const { data: presenceData, error: presenceError } = await supabase
+          .from("user_presence")
+          .select("user_id, online, last_seen")
+          .eq("user_id", otherUserId)
+          .maybeSingle();
+
+        if (presenceError) throw presenceError;
+        if (!mounted) return;
+
+        setOtherUser(usersById.get(otherUserId) || { id: otherUserId });
+        setPresence(presenceData);
+      } catch {
+        if (!mounted) return;
+        setOtherUser(null);
+        setPresence(null);
+      }
+    };
+
+    fetchOtherUserAndPresence();
+
+    return () => {
+      mounted = false;
+    };
+  }, [safeConversationId, user?.id]);
+
+  useEffect(() => {
+    if (!otherUser?.id) return undefined;
+
+    const channel = supabase
+      .channel(`presence:${otherUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_presence",
+          filter: `user_id=eq.${otherUser.id}`,
+        },
+        (payload) => {
+          setPresence(payload.new);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [otherUser?.id]);
+
+  useEffect(() => {
+    if (!safeConversationId || !user?.id) return;
+
+    supabase.rpc("mark_conversation_seen", {
+      target_conversation_id: safeConversationId,
+    });
+  }, [messages, safeConversationId, user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,15 +183,45 @@ export default function Chat({ user, conversationId }) {
     if (!content || !safeConversationId || !user?.id) return;
     setError("");
     const { error: insertError } = await supabase.from("messages").insert([
-      { content, sender_id: user.id, conversation_id: safeConversationId },
+      {
+        content,
+        sender_id: user.id,
+        conversation_id: safeConversationId,
+        delivered: true,
+        seen: false,
+      },
     ]);
     if (insertError) { setError(insertError.message); return; }
     setNewMsg("");
   };
 
-  const logout = async () => { await supabase.auth.signOut(); };
+  const logout = async () => {
+    if (user?.id) {
+      await supabase.from("user_presence").upsert(
+        {
+          user_id: user.id,
+          online: false,
+          last_seen: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+    }
+    await supabase.auth.signOut();
+  };
 
   const initials = user?.email?.[0]?.toUpperCase() || "U";
+  const chatInitials =
+    otherUser?.email?.[0]?.toUpperCase() || initials;
+  const presenceLabel = presence?.online
+    ? "Online"
+    : presence?.last_seen
+      ? `Last seen ${new Date(presence.last_seen).toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : "Offline";
 
   return (
     <section style={styles.wrapper}>
@@ -93,12 +230,12 @@ export default function Chat({ user, conversationId }) {
         {safeConversationId ? (
           <>
             <div style={styles.headerLeft}>
-              <div style={styles.avatar}>{initials}</div>
+              <div style={styles.avatar}>{chatInitials}</div>
               <div>
-                <p style={styles.headerName}>Conversation</p>
+                <p style={styles.headerName}>{otherUser?.email || "Conversation"}</p>
                 <p style={styles.headerStatus}>
-                  <span style={styles.onlineDot} />
-                  Online
+                  {presence?.online && <span style={styles.onlineDot} />}
+                  {presenceLabel}
                 </p>
               </div>
             </div>
@@ -185,8 +322,8 @@ export default function Chat({ user, conversationId }) {
                       </span>
                       {isOwn && (
                         <svg width="16" height="11" viewBox="0 0 16 11" style={{ marginLeft: 3 }}>
-                          <path d="M11.071.653a.5.5 0 0 0-.707 0L4.5 6.518 2.136 4.153a.5.5 0 1 0-.707.707l2.718 2.718a.5.5 0 0 0 .707 0l6.217-6.218a.5.5 0 0 0 0-.707z" fill="#dbe4ff"/>
-                          <path d="M14.071.653a.5.5 0 0 0-.707 0L7.5 6.518l-.854-.854-.707.707 1.207 1.207a.5.5 0 0 0 .707 0L14.07 1.36a.5.5 0 0 0 0-.707z" fill="#dbe4ff"/>
+                          <path d="M11.071.653a.5.5 0 0 0-.707 0L4.5 6.518 2.136 4.153a.5.5 0 1 0-.707.707l2.718 2.718a.5.5 0 0 0 .707 0l6.217-6.218a.5.5 0 0 0 0-.707z" fill={msg.seen ? "#7dd3fc" : "#dbe4ff"}/>
+                          {msg.delivered && <path d="M14.071.653a.5.5 0 0 0-.707 0L7.5 6.518l-.854-.854-.707.707 1.207 1.207a.5.5 0 0 0 .707 0L14.07 1.36a.5.5 0 0 0 0-.707z" fill={msg.seen ? "#7dd3fc" : "#dbe4ff"}/>}
                         </svg>
                       )}
                     </div>

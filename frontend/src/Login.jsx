@@ -4,19 +4,36 @@ import { supabase } from "./supabase";
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleAuth = async () => {
     setError("");
+    setMessage("");
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // For local testing, if sign up does not create a usable session:
+    // Supabase Dashboard -> Auth -> Settings -> Email Auth -> disable "Confirm email".
+    const { data, error } = isSignup
+      ? await supabase.auth.signUp({ email, password })
+      : await supabase.auth.signInWithPassword({ email, password });
+
     setLoading(false);
     if (error) {
       setError(error.message);
+    } else if (isSignup && !data.session) {
+      setMessage("Check your email to confirm your account.");
     } else {
       onLogin(data.user);
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignup((current) => !current);
+    setError("");
+    setMessage("");
   };
 
   return (
@@ -42,7 +59,7 @@ export default function Login({ onLogin }) {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              onKeyDown={(e) => e.key === "Enter" && handleAuth()}
               style={styles.input}
             />
           </div>
@@ -54,7 +71,7 @@ export default function Login({ onLogin }) {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+              onKeyDown={(e) => e.key === "Enter" && handleAuth()}
               style={styles.input}
             />
           </div>
@@ -68,8 +85,17 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
+          {message && (
+            <div style={styles.messageBox}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#7dd3fc" style={{ flexShrink: 0 }}>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15-5-5 1.41-1.41L11 14.17l5.59-5.59L18 10l-7 7z"/>
+              </svg>
+              {message}
+            </div>
+          )}
+
           <button
-            onClick={handleLogin}
+            onClick={handleAuth}
             disabled={loading || !email || !password}
             style={{
               ...styles.loginBtn,
@@ -77,7 +103,15 @@ export default function Login({ onLogin }) {
               cursor: loading || !email || !password ? "default" : "pointer",
             }}
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading
+              ? isSignup ? "Signing up..." : "Signing in..."
+              : isSignup ? "Sign Up" : "Sign In"}
+          </button>
+
+          <button type="button" onClick={toggleMode} style={styles.toggleBtn}>
+            {isSignup
+              ? "Already have an account? Sign In"
+              : "Don't have an account? Sign Up"}
           </button>
         </div>
 
@@ -137,6 +171,11 @@ const styles = {
     backgroundColor: "#3d2621", color: "#ef9a9a",
     fontSize: 13, padding: "10px 14px", borderRadius: 8,
   },
+  messageBox: {
+    display: "flex", alignItems: "center", gap: 8,
+    backgroundColor: "#173043", color: "#7dd3fc",
+    fontSize: 13, padding: "10px 14px", borderRadius: 8,
+  },
   loginBtn: {
     backgroundColor: "#00a884",
     color: "white", fontWeight: 600, fontSize: 15,
@@ -145,6 +184,14 @@ const styles = {
     marginTop: 8,
     transition: "opacity 0.2s, transform 0.1s",
     width: "100%",
+  },
+  toggleBtn: {
+    background: "none",
+    border: "none",
+    color: "#00a884",
+    fontSize: 13,
+    cursor: "pointer",
+    padding: 0,
   },
   footer: { color: "#3b4a54", fontSize: 11, textAlign: "center", marginTop: 28, marginBottom: 0 },
 };
