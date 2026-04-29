@@ -12,7 +12,7 @@ async function findAuthUser(target) {
   if (!value) return null;
 
   if (uuidPattern.test(value)) {
-    const usersById = await fetchAuthUsersByIds([value]);
+    const usersById = await fetchAuthUsersByIds([value], supabase);
     return usersById.get(value) || null;
   }
 
@@ -108,7 +108,7 @@ export default function ConversationsSidebar({
             .filter((participant) => participant.user_id !== userId)
             .map((participant) => participant.user_id)
         );
-        const authUsersById = await fetchAuthUsersByIds(otherUserIds);
+        const authUsersById = await fetchAuthUsersByIds(otherUserIds, supabase);
 
         const nextConversations = (conversationsData || [])
           .map((conversation) => {
@@ -143,6 +143,7 @@ export default function ConversationsSidebar({
 
         return nextConversations;
       } catch (fetchError) {
+       console.error("FETCH ERROR FULL:", JSON.stringify(fetchError, null, 2));
         setError(fetchError.message);
         setConversations([]);
         return [];
@@ -233,7 +234,8 @@ export default function ConversationsSidebar({
       onSelectConversation(conversation.id);
     } catch (createError) {
       setError(createError.message);
-	console.error("Sidebar error:", createError);
+  console.error("Sidebar FULL ERROR:", JSON.stringify(createError, null, 2));
+console.error("Sidebar RAW ERROR:", createError);
     } finally {
       setCreating(false);
     }
@@ -417,5 +419,3 @@ const styles = {
   convBottom: {},
   convLastMsg: { color: "#8696a0", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" },
 };
-
-
