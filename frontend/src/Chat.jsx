@@ -116,7 +116,7 @@ export default function Chat({ user, conversationId }) {
 
         if (!otherUserId) return;
 
-        const usersById = await fetchAuthUsersByIds([otherUserId]);
+        const usersById = await fetchAuthUsersByIds([otherUserId], supabase);
         const { data: presenceData, error: presenceError } = await supabase
           .from("user_presence")
           .select("user_id, online, last_seen")
@@ -496,3 +496,5 @@ const styles = {
     boxShadow: "0 12px 24px rgba(64, 101, 196, 0.24)",
   },
 };
+
+
