@@ -8,9 +8,11 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userRef = useRef(null);
   const selectConversation = useCallback((conversationId) => {
     setSelectedConversationId(conversationId);
+    setIsSidebarOpen(false);
   }, []);
 
   const updatePresence = useCallback(async (nextUserId, online) => {
@@ -62,6 +64,7 @@ function App() {
 
       if (!session?.user) {
         setSelectedConversationId(null);
+        setIsSidebarOpen(false);
       }
     });
 
@@ -113,7 +116,26 @@ function App() {
 
   return (
     <div className="app-frame flex h-screen w-screen overflow-hidden" style={{ backgroundColor: "#16192a" }}>
-      <div className="app-card">
+      <div className={`app-card ${isSidebarOpen ? "sidebar-open" : ""}`}>
+        <button
+          className="mobile-sidebar-toggle"
+          type="button"
+          aria-label={isSidebarOpen ? "Close conversations" : "Open conversations"}
+          aria-expanded={isSidebarOpen}
+          onClick={() => setIsSidebarOpen((open) => !open)}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+          </svg>
+        </button>
+        <button
+          className="mobile-sidebar-backdrop"
+          type="button"
+          aria-label="Close conversations"
+          onClick={() => setIsSidebarOpen(false)}
+        />
         <ConversationsSidebar
           user={user}
           selectedConversationId={selectedConversationId}
@@ -129,13 +151,6 @@ function App() {
       </div>
     </div>
   );
-
-  try {
-    return (<YourApp />);
-  } catch (e) {
-      console.error("APP CRASH:", e);
-      return <div>App crashed</div>;
-    }
 }
 
 export default App;
