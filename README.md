@@ -1,94 +1,33 @@
-# 💬 Arham Chat App
+# 💬 Arham Chat – Real-Time Messaging Platform
 
-A simple real-time chat application built using **React, Capacitor, and Supabase** as part of the Arham Fintech Frontend Intern Assessment.
-
----
+A real-time chat application built using React, Supabase, and Capacitor.
 
 ## 🚀 Features
-
-* 🔐 User Authentication (Email & Password via Supabase)
-* 💬 Real-time messaging (Supabase Realtime)
-* 📋 Chat list showing conversations
-* 📱 Mobile app using Capacitor (Android)
-* 🔄 Live updates without refresh
-
----
+- 🔐 User Authentication (Supabase Auth)
+- 💬 Real-time messaging
+- 📱 Mobile-ready (Capacitor Android build)
+- 🎨 Modern responsive UI
+- ⚡ Fast performance with Vite
 
 ## 🛠 Tech Stack
+- React (Frontend)
+- Supabase (Backend + Auth + Realtime DB)
+- Tailwind CSS (Styling)
+- Capacitor (Android App)
 
-* React (Vite)
-* Capacitor (Android app)
-* Supabase (Auth + Database + Realtime)
+## 📂 Project Structure
+frontend/ → React App  
+android/ → Mobile build (Capacitor)  
+supabase_backend.sql → Database schema  
 
----
-
-## 🧱 Database Schema (Supabase)
-
-### conversations
-
-* id
-* created_at
-
-### conversation_participants
-
-* conversation_id
-* user_id
-
-### messages
-
-* id
-* conversation_id
-* sender_id
-* content
-* created_at
-
----
-
-## ⚙️ Setup Instructions
-
-### 1. Clone repo
+## ⚙️ Setup
 
 ```bash
-git clone <your-repo-link>
 cd frontend
-```
-
----
-
-### 2. Install dependencies
-
-```bash
 npm install
-```
-
----
-
-### 3. Setup environment variables
-
-Create `.env` file:
-
-```env
-VITE_SUPABASE_URL=your_url
-VITE_SUPABASE_ANON_KEY=your_key
-```
-
----
-
-### 4. Run locally
-
-```bash
 npm run dev
-```
 
 ---
-
-## 📱 Build Android App (APK)
-
-```bash
-npm run build
-npx cap sync
-npx cap open android
-```
 
 Then in Android Studio:
 
